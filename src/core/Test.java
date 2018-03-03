@@ -1,19 +1,8 @@
 package core;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.Cipher;
 
@@ -21,16 +10,8 @@ import encryptutils.RSAUtil;
 
 public class Test {
 	public static void main(String[] args) {
-
-//		KeyPair generateKeyPair = RSAUtil.generateKeyPair();
-//		try {
-//			RSAUtil.keyToFile(generateKeyPair);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
 		
 		try {
-			
 			
 			RSAPublicKey publicKey = RSAUtil.loadPublicKeyFromFile();
 			System.out.println("===== Public Key is =====\n"+publicKey);
@@ -55,54 +36,39 @@ public class Test {
 			
 			//////////////////////////////////////////////////////////////
 			
-			String context = RSAUtil.generateMessageDigsetSHA(data);
+			//计算出HexBinary摘要
+			String context = RSAUtil.generateMessageDigestSHA(data);
 			System.out.println("context string : "+ context);
+			
+			//加签
+			String addSign = RSAUtil.addSign(privateKey, context);
+			
+			//验签
+			boolean verifySign = RSAUtil.verifySign(publicKey, context, addSign);
+			if (verifySign) {
+				System.out.println("验签成功");
+			}else {
+				System.out.println("验签失败");				
+			}
+			
+			/////////////////////////////////////////////////////////////////
+			
+			File file = new File("data/test.txt");
+			if(file.exists()) {
+				System.out.println("=====准备计时=====");
+				long start = System.currentTimeMillis();
+				String generateFileMessageDigestSHA = RSAUtil.generateFileMessageDigestSHA(file);
+				long cost = System.currentTimeMillis() - start;
+				float time = (cost / 1000f);
+				System.out.println("共计用时 ： " + time + "秒");
+				System.out.println("文件大小 ： " + file.length());
+				System.out.println(file.getName() + " 文件摘要（SHA）： "+ generateFileMessageDigestSHA);
+			}
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 
-	public static void main1(String[] args) {
-		try {
-			/*
-			 * ��ȡ����Կ��
-			 */
-			KeyPairGenerator instance = KeyPairGenerator.getInstance("RSA");
-			instance.initialize(1024);
-			KeyPair genKeyPair = instance.genKeyPair();
-			System.out.println("Public Key : ");
-			System.out.println(genKeyPair.getPublic());
-			System.out.println("Private Key : ");
-			System.out.println(genKeyPair.getPrivate());
-
-			String encryptBase64 = RSAUtil.encryptBase64(genKeyPair.getPublic().getEncoded());
-			System.out.println(
-					"\n\n================================\n" + encryptBase64 + "\n\n================================");
-			byte[] decryptBase64 = RSAUtil.decryptBase64(encryptBase64);
-			System.out.println("\n\n============byte================\n" + String.valueOf(decryptBase64)
-					+ "\n\n================================");
-			/*
-			 * �õ�Public Key
-			 */
-			PublicKey publicKey = genKeyPair.getPublic();
-			PrivateKey privateKey = genKeyPair.getPrivate();
-			byte[] bytes = publicKey.getEncoded();
-			byte[] bytes2 = privateKey.getEncoded();
-			System.out.println(String.valueOf(bytes));
-			System.out.println(String.valueOf(bytes2));
-
-			/*
-			 * 
-			 */
-			// new X509EncodedKeySpec(publicKey)
-
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
 }

@@ -7,8 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
+import java.security.DigestInputStream;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -111,17 +110,21 @@ public class RSAUtil {
 	}
 	
 	public static RSAPublicKey loadPublicKeyFromFile() throws IOException, InvalidKeySpecException {
+		
 		FileInputStream fis = new FileInputStream(new File(publicPath));
 		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 		StringBuffer sb = new StringBuffer(1024);
 		String line = null;
+		
 		while((line = br.readLine()) != null) {
 			sb.append(line);
 		}
 		br.close();
+		
 		String publicKey = sb.toString();
 		byte[] publicKeyBytes = decryptBase64(publicKey);
 		X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+		
 		try {
 			KeyFactory factory = KeyFactory.getInstance(RSA);
 			RSAPublicKey generatePublic = (RSAPublicKey) factory.generatePublic(encodedKeySpec);
@@ -129,21 +132,28 @@ public class RSAUtil {
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 			return null;
+		} finally {
+			fis.close();
+			br.close();
 		}
  	}
 	
 	public static RSAPrivateKey loadPrivateKeyFromFile() throws IOException, InvalidKeySpecException {
+		
 		FileInputStream fis = new FileInputStream(new File(privatePath));
 		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 		StringBuffer sb = new StringBuffer(1024);
 		String line = null;
+		
 		while((line = br.readLine()) != null) {
 			sb.append(line);
 		}
 		br.close();
+		
 		String privateKey = sb.toString();
 		byte[] privateKeyBytes = decryptBase64(privateKey);
 		PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+		
 		try {
 			KeyFactory factory = KeyFactory.getInstance(RSA);
 			RSAPrivateKey generatePrivate = (RSAPrivateKey) factory.generatePrivate(encodedKeySpec);
@@ -164,6 +174,7 @@ public class RSAUtil {
 	 * @throws Exception
 	 */
 	public static byte[] encryptOrDecrypt(Key key, byte[] data, int mode) throws Exception {
+		
 		String ENCRYPT_ALGORITHM = "RSA/ECB/PKCS1Padding";
 		
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -191,20 +202,24 @@ public class RSAUtil {
 	
 	
 	public static byte[] encrypt(Key key, String data) throws Exception {
+		
 		return encryptOrDecrypt(key, data.getBytes(UTF_8), Cipher.ENCRYPT_MODE);
 	}
 	
 	
 	public static byte[] decrypt(Key key, String data) throws Exception {
+		
 		return encryptOrDecrypt(key, data.getBytes(UTF_8), Cipher.ENCRYPT_MODE);
 	}
 	
 	public static byte[] encrypt(Key key, byte[] data) throws Exception {
+		
 		return encryptOrDecrypt(key, data, Cipher.ENCRYPT_MODE);
 	}
 	
 	
 	public static byte[] decrypt(Key key, byte[] data) throws Exception {
+		
 		return encryptOrDecrypt(key, data, Cipher.ENCRYPT_MODE);
 	}
 	
@@ -217,6 +232,7 @@ public class RSAUtil {
 	 * @throws Exception
 	 */
 	public static String addSign(PrivateKey privateKey, String context) throws Exception {
+		
 		String SIGN_ALGORITHM = "SHA1WithRSA";
 		
 		Signature signature = Signature.getInstance(SIGN_ALGORITHM);
@@ -235,6 +251,7 @@ public class RSAUtil {
 	 * @throws Exception
 	 */
 	public static boolean verifySign(PublicKey publicKey, String context, String signData) throws Exception {
+		
 		String SIGN_ALGORITHM = "SHA1WithRSA";
 		
 		Signature signature = Signature.getInstance(SIGN_ALGORITHM);
@@ -247,30 +264,51 @@ public class RSAUtil {
 	
 	
 	
-	public static String generateMessageDigsetSHA(byte[] data) throws Exception {
+	public static String generateMessageDigestSHA(byte[] data) throws Exception {
 		
 		MessageDigest digest = MessageDigest.getInstance("SHA");
 		digest.update(data);//.getBytes(UTF_8));
-		byte[] digestEncode = digest.digest();
-		
-//		String printHexBinary = DatatypeConverter.printHexBinary(digestEncode);
-//		byte[] parseHexBinary = DatatypeConverter.parseHexBinary(printHexBinary);
-//		System.out.println(digestEncode.equals(parseHexBinary));
-//		System.out.println(printHexBinary);
-//		System.out.println(digestEncode.length == parseHexBinary.length);
-//		for (int i = 0; i < parseHexBinary.length; i++) {
-//			byte b = parseHexBinary[i];
-//			byte c = digestEncode[i];
-//			System.out.println(b == c);
-//		}
-		
+		byte[] digestEncode = digest.digest();		
 //		String base64String = Base64.encodeBase64URLSafeString(digestEncode);
 		String hexBinary = DatatypeConverter.printHexBinary(digestEncode);
 		return hexBinary;
 	}
 	
-	public static String generateMessageDigsetSHA(String data) throws Exception {
-		return generateMessageDigsetSHA(data.getBytes(UTF_8));
+	public static String generateMessageDigestSHA(String data) throws Exception {
+		
+		return generateMessageDigestSHA(data.getBytes(UTF_8));
+	}
+	
+	/**
+	 * 文件消息摘要，耗时操作
+	 * @throws IOException 
+	 * 
+	 */
+	public static String generateFileMessageDigestSHA(File file) throws IOException {
+		
+		FileInputStream fis = new FileInputStream(file);
+		MessageDigest messageDigest;
+		DigestInputStream digestInputStream = null;
+		
+		try {
+			
+			messageDigest = MessageDigest.getInstance("SHA");
+			digestInputStream = new DigestInputStream(fis, messageDigest);
+			//this method will then call update on the message digest associated with this stream
+			while(digestInputStream.read() != -1);
+			byte[] digestBytes = messageDigest.digest();
+			String hexBinaryDigest = DatatypeConverter.printHexBinary(digestBytes);
+			
+			return hexBinaryDigest;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			return null;
+		} finally {
+			fis.close();			
+			if (digestInputStream != null) {
+				digestInputStream.close();
+			}
+		}
 	}
 
 }
