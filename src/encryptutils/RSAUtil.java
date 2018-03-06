@@ -1,5 +1,6 @@
 package encryptutils;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -39,7 +40,7 @@ public class RSAUtil {
 	private static final String privatePath = "data\\pri.pem";
 	
 	public static String encryptBase64(byte[] key) {
-		String encodeKey = Base64.encodeBase64String(key);
+		String encodeKey = Base64.encodeBase64URLSafeString(key);
 //		String encodeKey = Base64.getEncoder().encodeToString(key);
 		return encodeKey;
 	}
@@ -287,13 +288,16 @@ public class RSAUtil {
 	public static String generateFileMessageDigestSHA(File file) throws IOException {
 		
 		FileInputStream fis = new FileInputStream(file);
+		///
+		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
+		///
 		MessageDigest messageDigest;
 		DigestInputStream digestInputStream = null;
 		
 		try {
 			
 			messageDigest = MessageDigest.getInstance("SHA");
-			digestInputStream = new DigestInputStream(fis, messageDigest);
+			digestInputStream = new DigestInputStream(bis, messageDigest);
 			//this method will then call update on the message digest associated with this stream
 			while(digestInputStream.read() != -1);
 			byte[] digestBytes = messageDigest.digest();
@@ -308,6 +312,9 @@ public class RSAUtil {
 			if (digestInputStream != null) {
 				digestInputStream.close();
 			}
+			///
+			bis.close();
+			///
 		}
 	}
 

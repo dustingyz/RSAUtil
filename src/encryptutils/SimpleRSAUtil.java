@@ -4,17 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
-import javax.crypto.Cipher;
-import javax.security.auth.callback.Callback;
 
 import encryptutils.RSAUtil;
 
@@ -87,6 +80,7 @@ public class SimpleRSAUtil {
 			public void run() {
 				String fileMessageDigest;
 				try {
+					System.out.println("execute in " + Thread.currentThread().getName() + " ...");
 					fileMessageDigest = RSAUtil.generateFileMessageDigestSHA(file);
 					callback.callback(fileMessageDigest);
 				} catch (IOException e) {
@@ -100,8 +94,6 @@ public class SimpleRSAUtil {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		
 		executor.submit(callable);
-		
-		executor.shutdown();
 		
 		new Thread(new Runnable() {
 			
@@ -117,6 +109,7 @@ public class SimpleRSAUtil {
 			}
 		}).start();
 		
+		executor.shutdown();
 	}
 	
 	public static interface ICallback{

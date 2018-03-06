@@ -93,7 +93,9 @@ public class Test {
 				long time_now = System.currentTimeMillis();
 				if (time_now - time > 1000) {
 					time = time_now;
-					System.out.println("running...");
+					if (!onResult) {						
+						System.out.println("running in " + Thread.currentThread().getName() + " ...");
+					}
 				}
 				if(time_now - time_start > 120000) {
 					onResult = true;
