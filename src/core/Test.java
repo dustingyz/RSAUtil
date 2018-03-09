@@ -5,6 +5,9 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+
+import org.bouncycastle.jcajce.provider.asymmetric.RSA;
 
 import encryptutils.RSAUtil;
 import encryptutils.SimpleRSAUtil;
@@ -102,7 +105,14 @@ public class Test {
 					System.out.println("shutdown!");
 				}
 			}
-
+			
+			SecretKey generateAESKey = RSAUtil.generateAESKey();
+			String aesKey64 = RSAUtil.encryptBase64(generateAESKey.getEncoded());
+			System.out.println("aes key = " + aesKey64);
+			RSAUtil.ketToFile(generateAESKey);
+				
+			SecretKey loadAESKeyFromFile = RSAUtil.loadAESKeyFromFile();
+			System.out.println(loadAESKeyFromFile);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

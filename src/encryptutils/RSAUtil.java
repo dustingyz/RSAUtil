@@ -2,9 +2,11 @@ package encryptutils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -27,17 +30,22 @@ import java.security.spec.X509EncodedKeySpec;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class RSAUtil {
 
+	private static final String AES = "AES";
 	private static final String RSA = "RSA";
 	private static final String UTF_8 = "utf-8";
 	
 	private static final String publicPath = "data\\pub.pem";
 	private static final String privatePath = "data\\pri.pem";
+	private static final String secretkeyPath = "data\\aes.key";
 	
 	public static String encryptBase64(byte[] key) {
 		String encodeKey = Base64.encodeBase64URLSafeString(key);
@@ -316,6 +324,60 @@ public class RSAUtil {
 			bis.close();
 			///
 		}
+	}
+	
+	
+	public static SecretKey generateAESKey(byte[] randomSeed) {
+		try {
+			KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
+			if (randomSeed == null || randomSeed.length <= 0) {				
+				keyGenerator.init(128, new SecureRandom());
+			}else {				
+				keyGenerator.init(128, new SecureRandom(randomSeed));
+			}
+			SecretKey secretKey = keyGenerator.generateKey();
+			return secretKey;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static SecretKey generateAESKey() {
+		return generateAESKey(null);
+	}
+	
+	public static void ketToFile(SecretKey key) throws IOException {
+		File file = new File(secretkeyPath);
+		String encryptKey = encryptBase64(key.getEncoded());
+		FileWriter fileWriter = new FileWriter(file);
+		BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+		bufferedWriter.write(encryptKey);
+		fileWriter.flush();
+		bufferedWriter.close();
+		fileWriter.close();
+	}
+	
+	public static SecretKey loadAESKeyFromFile() throws IOException {
+		FileInputStream fis = new FileInputStream(new File(secretkeyPath));
+		BufferedInputStream bis = new BufferedInputStream(fis);
+		StringBuilder sb = new StringBuilder();
+		
+		byte[] bytes = new byte[128];
+		while(bis.read(bytes) != -1) {
+			sb.append(new String(bytes, UTF_8));
+		}
+		String key64 = sb.toString();
+		System.out.println("file key = " + key64);
+		byte[] decryptBase64 = decryptBase64(key64);
+		SecretKeySpec secretKeySpec = new SecretKeySpec(decryptBase64, AES);
+		bis.close();
+		fis.close();
+		return secretKeySpec;
+	}
+	
+	public static void encryptAES(byte[] bytes) {
+		
 	}
 
 }

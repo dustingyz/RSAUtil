@@ -2,3 +2,5 @@ bin/
 *.pem
 .git/
 .setting/
+aes.key
+
