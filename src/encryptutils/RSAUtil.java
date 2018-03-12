@@ -31,7 +31,9 @@ import org.apache.commons.codec.binary.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
@@ -326,10 +328,22 @@ public class RSAUtil {
 		}
 	}
 	
+	public static byte[] generateAESIvParamsBytes() {
+		byte[] bytes = new byte[128/8];
+		SecureRandom secureRandom = new SecureRandom();
+		secureRandom.nextBytes(bytes);
+		return bytes;
+	}
+	
+	public static IvParameterSpec getIvParams(byte[] ivBytes) {
+		IvParameterSpec ivParameterSpec = new IvParameterSpec(ivBytes);
+		return ivParameterSpec;
+	}
 	
 	public static SecretKey generateAESKey(byte[] randomSeed) {
 		try {
 			KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
+
 			if (randomSeed == null || randomSeed.length <= 0) {				
 				keyGenerator.init(128, new SecureRandom());
 			}else {				
@@ -358,26 +372,58 @@ public class RSAUtil {
 		fileWriter.close();
 	}
 	
-	public static SecretKey loadAESKeyFromFile() throws IOException {
-		FileInputStream fis = new FileInputStream(new File(secretkeyPath));
-		BufferedInputStream bis = new BufferedInputStream(fis);
-		StringBuilder sb = new StringBuilder();
-		
-		byte[] bytes = new byte[128];
-		while(bis.read(bytes) != -1) {
-			sb.append(new String(bytes, UTF_8));
+	public static SecretKeySpec loadAESKeyFromFile() throws IOException {
+		try {			
+			FileInputStream fis = new FileInputStream(new File(secretkeyPath));
+			BufferedInputStream bis = new BufferedInputStream(fis);
+			StringBuilder sb = new StringBuilder();
+			
+			byte[] bytes = new byte[128];
+			while(bis.read(bytes) != -1) {
+				sb.append(new String(bytes, UTF_8));
+			}
+			String key64 = sb.toString();
+			System.out.println("file key = " + key64);
+			byte[] decryptBase64 = decryptBase64(key64);
+			SecretKeySpec secretKeySpec = new SecretKeySpec(decryptBase64, AES);
+			bis.close();
+			fis.close();
+			return secretKeySpec;
+		}catch (FileNotFoundException e) {
+			throw new RuntimeException("Key文件不存在");
 		}
-		String key64 = sb.toString();
-		System.out.println("file key = " + key64);
-		byte[] decryptBase64 = decryptBase64(key64);
-		SecretKeySpec secretKeySpec = new SecretKeySpec(decryptBase64, AES);
-		bis.close();
-		fis.close();
-		return secretKeySpec;
 	}
 	
-	public static void encryptAES(byte[] bytes) {
-		
+	public static byte[] encryptOrDecryptAES(SecretKeySpec keySpec, byte[] bytes, int mode, IvParameterSpec ivspec) throws Exception{
+			
+		Cipher instance;
+		try {
+			instance = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			instance.init(mode, keySpec, ivspec);
+			byte[] data = instance.doFinal(bytes);
+			return data;
+		} catch (NoSuchAlgorithmException e) {
+			return null;
+		} catch (NoSuchPaddingException e) {
+			return null;
+		}
+	
+	}
+	
+	public static byte[] encryptAES(SecretKeySpec keySpec, byte[] data, IvParameterSpec ivspec) throws Exception{
+		return encryptOrDecryptAES(keySpec, data, Cipher.ENCRYPT_MODE, ivspec);
+	}
+	
+	public static byte[] decryptAES(SecretKeySpec keySpec, byte[] data, IvParameterSpec ivspec) throws Exception {
+		return encryptOrDecryptAES(keySpec, data, Cipher.DECRYPT_MODE, ivspec);
+	}
+	
+	public static byte[] encryptAES(SecretKeySpec keySpec, String data, IvParameterSpec ivspec) throws Exception{
+		return encryptOrDecryptAES(keySpec, data.getBytes(UTF_8), Cipher.ENCRYPT_MODE, ivspec);
+	}
+	
+	public static byte[] decryptAES(SecretKeySpec keySpec, String data, IvParameterSpec ivspec) throws Exception {
+		return encryptOrDecryptAES(keySpec, data.getBytes(UTF_8), Cipher.DECRYPT_MODE, ivspec);
 	}
 
 }

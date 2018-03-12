@@ -5,9 +5,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-
-import org.bouncycastle.jcajce.provider.asymmetric.RSA;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import encryptutils.RSAUtil;
 import encryptutils.SimpleRSAUtil;
@@ -106,13 +105,33 @@ public class Test {
 				}
 			}
 			
-			SecretKey generateAESKey = RSAUtil.generateAESKey();
-			String aesKey64 = RSAUtil.encryptBase64(generateAESKey.getEncoded());
-			System.out.println("aes key = " + aesKey64);
-			RSAUtil.ketToFile(generateAESKey);
+//			SecretKey generateAESKey = RSAUtil.generateAESKey();
+//			String aesKey64 = RSAUtil.encryptBase64(generateAESKey.getEncoded());
+//			System.out.println("aes key = " + aesKey64);
+//			RSAUtil.ketToFile(generateAESKey);
 				
-			SecretKey loadAESKeyFromFile = RSAUtil.loadAESKeyFromFile();
+			SecretKeySpec loadAESKeyFromFile = RSAUtil.loadAESKeyFromFile();
+			System.out.println("AES Key(Base64) : " + RSAUtil.encryptBase64(loadAESKeyFromFile.getEncoded()));
 			System.out.println(loadAESKeyFromFile);
+			
+			byte[] generateAESIvParamsBytes = RSAUtil.generateAESIvParamsBytes();
+			String encryptBase64Iv = RSAUtil.encryptBase64(generateAESIvParamsBytes);
+			System.out.println("加密用Iv bytes(Base64) ： " + encryptBase64Iv);
+			IvParameterSpec ivParamsEn = RSAUtil.getIvParams(generateAESIvParamsBytes);
+			
+			byte[] decryptBase64Iv = RSAUtil.decryptBase64(encryptBase64Iv);
+			IvParameterSpec ivParamsDe = RSAUtil.getIvParams(decryptBase64Iv);
+			
+			String aesText = "AES 加密用明文";
+			byte[] encryptAES = RSAUtil.encryptAES(loadAESKeyFromFile, aesText, ivParamsEn);
+			String encryptBase64 = RSAUtil.encryptBase64(encryptAES);
+			System.out.println("AES明文加密后： " + encryptBase64);
+			byte[] decryptBase64AES = RSAUtil.decryptBase64(encryptBase64);
+			byte[] decryptAES = RSAUtil.decryptAES(loadAESKeyFromFile, decryptBase64AES, ivParamsDe);
+			String aesDecryptText = new String(decryptAES, "utf-8");
+			
+			System.out.println("AES密文解密后： " + aesDecryptText);			
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
