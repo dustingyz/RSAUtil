@@ -22,6 +22,7 @@ public class Test {
 	static boolean onResult = false;
 	
 	public static void main(String[] args) {
+		
 		File file = new File("data/test_file.docx.enc");
 //		File file = new File("data/test_file.docx");
 //		File file = new File("data/test.txt");

@@ -383,9 +383,9 @@ public class RSAUtil {
 				sb.append(new String(bytes, UTF_8));
 			}
 			String key64 = sb.toString();
-			System.out.println("file key = " + key64);
+//			System.out.println("file key = " + key64);
 			byte[] decryptBase64 = decryptBase64(key64);
-			System.out.println("key length = " + decryptBase64.length + ", key = " + new String(decryptBase64, "ascii"));
+//			System.out.println("key length = " + decryptBase64.length + ", key = " + new String(decryptBase64, "ascii"));
 			SecretKeySpec secretKeySpec = new SecretKeySpec(decryptBase64, AES);
 			bis.close();
 			fis.close();
