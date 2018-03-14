@@ -1,8 +1,13 @@
 package core;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -15,8 +20,66 @@ import encryptutils.SimpleRSAUtil.ICallback;
 public class Test {
 
 	static boolean onResult = false;
-
+	
 	public static void main(String[] args) {
+		File file = new File("data/test_file.docx.enc");
+//		File file = new File("data/test_file.docx");
+//		File file = new File("data/test.txt");
+		if (file.exists()) {
+			
+			try {
+				int read_ = 8192;
+				int decrypt = read_ + 16;
+				FileInputStream fis = new FileInputStream(file);
+				BufferedInputStream bis = new BufferedInputStream(fis);
+//				byte[] bytes = new byte[read_];
+				byte[] bytes = new byte[decrypt];
+				System.out.println("byte length = " + bytes.length + ", str length = " + new String(bytes).length());
+				
+				int read = bis.read(bytes);
+				System.out.println("read = " + read + ", byte length = " + bytes.length);
+				
+//				System.out.println("asdf1234qwer4532 's length = " + "asdf1234qwer4532".getBytes().length);
+				
+				IvParameterSpec ivParams = RSAUtil.getIvParams("asdf1234qwer4532".getBytes());
+				SecretKeySpec keySpec = RSAUtil.loadAESKeyFromFile();
+				
+				FileOutputStream fos = new FileOutputStream(new File(file.getAbsolutePath() + ".ori"));
+				BufferedOutputStream bos = new BufferedOutputStream(fos);
+				
+				while(read != -1) {
+					byte[] copyBytes = Arrays.copyOfRange(bytes, 0, read);
+					byte[] decryptAES = RSAUtil.decryptAES(keySpec, copyBytes, ivParams);
+//					byte[] encryptAES = RSAUtil.encryptAES(keySpec, copyBytes, ivParams);
+					bos.write(decryptAES);
+//					bos.write(encryptAES);
+					read = bis.read(bytes);
+				}
+				
+				fos.flush();
+				bos.flush();
+				fos.close();
+				bos.close();
+				
+				bis.close();
+				fis.close();
+				
+				System.out.println("\nclose!");
+//				System.out.println(new String(encryptAES) + ",\n encrypt lenght = " + encryptAES.length);
+				
+//				byte[] decryptAES = RSAUtil.decryptAES(keySpec, encryptAES, ivParams);
+				
+//				System.out.println(new String(decryptAES));
+				
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
+	}
+
+	public static void main2(String[] args) {
 
 		try {
 
